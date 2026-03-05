@@ -28,21 +28,45 @@ pipeline {
         }
         
         stage('Deploy') {
-            
-            steps {
-                script{
-                    withAWS(region: 'us-east-1', credentials: 'aws-creds') {
-                        sh """
-                            aws eks update-kubeconfig --region $REGION --name expense-dev
-                            kubectl get nodes
-                              cd frontend-deply/helm
-                            sed -i 's/IMAGE_VERSION/${params.version}/g' values-${environment}.yaml
-                            helm upgrade --install $COMPONENT -n $PROJECT -f values-${environment}.yaml .
-                        """
-                    }
-                }
+    steps {
+        script{
+            withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                sh '''
+                echo "===== DEBUG START ====="
+
+                echo "Current directory:"
+                pwd
+
+                echo "Workspace files:"
+                ls
+
+                echo "Detailed listing:"
+                ls -la
+
+                echo "Trying to locate helm chart"
+                find . -name "Chart.yaml"
+
+                echo "Updating kubeconfig"
+                aws eks update-kubeconfig --region $REGION --name expense-dev
+
+                kubectl get nodes
+
+                echo "Moving to helm directory"
+                cd helm
+
+                pwd
+                ls -la
+
+                sed -i "s/IMAGE_VERSION/${version}/g" values-${deploy_to}.yaml
+
+                helm upgrade --install $COMPONENT -n $PROJECT -f values-${deploy_to}.yaml .
+
+                echo "===== DEBUG END ====="
+                '''
             }
         }
+    }
+}
         
     }
     post { 
